@@ -50,6 +50,13 @@ def get_news():
             'longitude_min': request.args.get('longitude_min'),
             'longitude_max': request.args.get('longitude_max')
         }
+        
+        # Konvertieren der feed_ids zu Integers
+        if filters['feed_ids']:
+            try:
+                filters['feed_ids'] = [int(feed_id) for feed_id in filters['feed_ids']]
+            except ValueError:
+                return jsonify({'error': 'Ungültige feed_ids-Parameter'}), 400
 
         # Basis-SQL-Abfrage
         query = sql.SQL("""
@@ -94,6 +101,11 @@ def get_news():
             search_term = f"%{filters['search']}%"
             params.extend([search_term, search_term])
             logger.info(f"Filter: search = {filters['search']}")
+        if filters['feed_ids']:
+            placeholders = ', '.join(['%s'] * len(filters['feed_ids']))
+            where_clauses.append(sql.SQL(f"n.feed_id IN ({placeholders})"))
+            params.extend(filters['feed_ids'])
+
 
         # Filter basierend auf Kartenkoordinaten
         if filters['latitude_min'] and filters['latitude_max']:
@@ -104,11 +116,6 @@ def get_news():
             where_clauses.append(sql.SQL("rf.longitude BETWEEN %s AND %s"))
             params.extend([filters['longitude_min'], filters['longitude_max']])
             logger.info(f"Filter: longitude_min = {filters['longitude_min']}, longitude_max = {filters['longitude_max']}")
-            
-        # Filter für feed_ids
-        if filters['feed_ids']:
-            where_clauses.append(sql.SQL("n.feed_id = ANY(%s)"))
-            params.append(filters['feed_ids'])
 
         # WHERE-Klauseln korrekt anhängen
         if where_clauses:
