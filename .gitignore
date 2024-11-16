@@ -1,0 +1,19 @@
+# Verzeichnisse und Dateien ausschließen
+database/config.ini
+
+# Python-spezifische Ausschlüsse
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+
+# Logs und temporäre Dateien
+*.log
+*.sqlite
+*.db
+
+# Virtuelle Umgebungen
+venv/
+env/
+ENV/
