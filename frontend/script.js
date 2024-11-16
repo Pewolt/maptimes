@@ -1,130 +1,220 @@
-// 1. Initialisierung der Karte
+// Initialisierung der Karte
 const map = L.map('map').setView([51.505, -0.09], 5);
-const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
-});
+const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 tileLayer.addTo(map);
 
-let activeMarker = null;
+let activeMarkers = new Set();
+const markers = L.markerClusterGroup().addTo(map);
 
-// API-Basis-URL
+// API-Basis-URLs
 const API_URL = 'http://127.0.0.1:5000/news';
+const FEEDS_URL = 'http://127.0.0.1:5000/feeds_with_counts';
+const CATEGORIES_URL = 'http://127.0.0.1:5000/categories';
 
-// Nachrichten laden und auf der Karte anzeigen
-async function loadNews(filters = {}) {
-  const params = new URLSearchParams({
-    page: 1,
-    per_page: 100,
-    ...filters
+// Farben für Marker
+const defaultColor = '#3388ff'; // Blau
+const selectedColor = '#ff7800'; // Orange
+
+// Funktion zum Laden der Feeds mit Nachrichtenanzahl
+async function loadFeeds(filters = {}) {
+  const bounds = map.getBounds();
+  filters.latitude_min = bounds.getSouthWest().lat;
+  filters.latitude_max = bounds.getNorthEast().lat;
+  filters.longitude_min = bounds.getSouthWest().lng;
+  filters.longitude_max = bounds.getNorthEast().lng;
+
+  const params = new URLSearchParams({ ...filters });
+  const response = await fetch(`${FEEDS_URL}?${params.toString()}`);
+  const data = await response.json();
+
+  updateMap(data.feeds);
+}
+
+// Karte mit Feeds aktualisieren
+function updateMap(feeds) {
+  markers.clearLayers();
+
+  feeds.forEach(feed => {
+    const markerSize = getMarkerSize(feed.news_count);
+    const color = activeMarkers.has(feed.feed_id) ? selectedColor : defaultColor;
+
+    const customIcon = L.divIcon({
+      html: `<div style="
+        background-color: ${color};
+        width: ${markerSize * 2}px;
+        height: ${markerSize * 2}px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-sizing: border-box;
+      "></div>`,
+      className: '',
+      iconSize: [markerSize * 2, markerSize * 2],
+      iconAnchor: [markerSize, markerSize],
+    });
+
+    const marker = L.marker([feed.latitude, feed.longitude], { icon: customIcon });
+
+    // Feed-ID und Nachrichtenanzahl speichern
+    marker.feedId = feed.feed_id;
+    marker.news_count = feed.news_count;
+
+    marker.on('click', () => {
+      toggleFeedSelection(marker);
+    });
+
+    // Tooltip hinzufügen
+    marker.bindTooltip(`${feed.name} (${feed.news_count} Nachrichten)`);
+
+    markers.addLayer(marker);
   });
 
+  // Sicherstellen, dass die Marker-Schicht zur Karte hinzugefügt wird
+  if (!map.hasLayer(markers)) {
+    map.addLayer(markers);
+  }
+}
+
+// Marker-Größe basierend auf Nachrichtenanzahl
+function getMarkerSize(newsCount) {
+  const minSize = 5;
+  const maxSize = 15;
+  const maxNewsCount = 50; // Anpassen je nach Ihren Daten
+  const size = minSize + (Math.min(newsCount, maxNewsCount) / maxNewsCount) * (maxSize - minSize);
+  return size;
+}
+
+// Feeds auswählen oder abwählen
+function toggleFeedSelection(marker) {
+  const feedId = marker.feedId;
+
+  if (activeMarkers.has(feedId)) {
+    activeMarkers.delete(feedId);
+    updateMarkerIcon(marker, defaultColor);
+  } else {
+    activeMarkers.add(feedId);
+    updateMarkerIcon(marker, selectedColor);
+  }
+
+  loadNews();
+}
+
+// Marker-Icon aktualisieren
+function updateMarkerIcon(marker, color) {
+  const markerSize = getMarkerSize(marker.news_count);
+  const customIcon = L.divIcon({
+    html: `<div style="
+      background-color: ${color};
+      width: ${markerSize * 2}px;
+      height: ${markerSize * 2}px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-sizing: border-box;
+    "></div>`,
+    className: '',
+    iconSize: [markerSize * 2, markerSize * 2],
+    iconAnchor: [markerSize, markerSize],
+  });
+  marker.setIcon(customIcon);
+}
+
+// Nachrichten laden basierend auf ausgewählten Feeds
+async function loadNews() {
+  const filters = {
+    search: document.getElementById('filter-keyword').value,
+    category: document.getElementById('filter-category').value,
+    start_date: document.getElementById('filter-start-date').value,
+    end_date: document.getElementById('filter-end-date').value,
+  };
+
+  // Wenn Feeds ausgewählt sind, filtern wir nach ihnen
+  if (activeMarkers.size > 0) {
+    filters.feed_ids = Array.from(activeMarkers);
+  }
+
+  const params = new URLSearchParams({ page: 1, per_page: 100, ...filters });
   const response = await fetch(`${API_URL}?${params.toString()}`);
   const data = await response.json();
 
-  updateMap(data.news);
+  updateNewsFeed(data.news);
 }
 
-// Karte mit Nachrichten aktualisieren
-function updateMap(newsList) {
-  map.eachLayer(layer => {
-    if (layer !== tileLayer) {
-      map.removeLayer(layer);
-    }
-  });
+// Nachrichtenfeed aktualisieren
+function updateNewsFeed(newsList) {
+  const newsListContainer = document.getElementById('news-list');
+  newsListContainer.innerHTML = '';
 
   newsList.forEach(newsItem => {
-    newsItem.locations.forEach(location => {
-      const circle = L.circleMarker([location.latitude, location.longitude], {
-        radius: 8,
-        color: 'blue',
-        fillColor: '#3388ff',
-        fillOpacity: 0.5
-      });
-
-      circle.on('click', () => {
-        if (activeMarker) activeMarker.setStyle({ color: 'blue' });
-        circle.setStyle({ color: 'red' });
-        activeMarker = circle;
-        showNewsDetails(newsItem);
-      });
-
-      circle.addTo(map);
-    });
+    const newsCard = document.createElement('div');
+    newsCard.className = 'news-card bg-white border p-2 m-1 rounded shadow-sm';
+    newsCard.innerHTML = `
+      <strong>${newsItem.title}</strong><br>
+      ${newsItem.description.substring(0, 50)}...<br>
+      <button class="btn btn-link p-0" onclick='showNewsPopup(${JSON.stringify(newsItem)})'>Mehr</button>
+    `;
+    newsListContainer.appendChild(newsCard);
   });
 }
 
-// Nachrichten-Details anzeigen
-function showNewsDetails(newsItem) {
-  const details = document.getElementById('news-details');
-  document.getElementById('news-title').textContent = newsItem.title;
-  document.getElementById('news-description').textContent = newsItem.description;
-  document.getElementById('news-link').href = newsItem.link;
-  details.classList.remove('d-none');
+// Nachrichten-Popup anzeigen
+function showNewsPopup(newsItem) {
+  const popup = document.getElementById('news-popup');
+  document.getElementById('popup-title').textContent = newsItem.title;
+  document.getElementById('popup-description').textContent = newsItem.description;
+  document.getElementById('popup-link').href = newsItem.link;
+
+  popup.classList.remove('d-none');
 }
 
-// 2. Filter-Menü-Interaktionen
-// Ein- und Ausklappen der Filterleiste
-const toggleFilterButton = document.getElementById('toggle-filter');
-const filterBar = document.getElementById('filter-bar');
-
-toggleFilterButton.addEventListener('click', () => {
-  filterBar.classList.toggle('d-none'); // Zeige/Verstecke die Filterleiste
+// Popup schließen
+document.getElementById('close-popup').addEventListener('click', () => {
+  document.getElementById('news-popup').classList.add('d-none');
 });
 
-// Event-Listener für den "Bestätigen"-Button
+// Filter anwenden
 document.getElementById('apply-filters').addEventListener('click', () => {
-  // Sammle die Filterdaten
-  const category = document.getElementById('filter-category').value;
-  const startDate = document.getElementById('filter-start-date').value;
-  const endDate = document.getElementById('filter-end-date').value;
-  const keyword = document.getElementById('filter-keyword').value;
-  const language = document.getElementById('filter-language').value;
-
-  // API-Abfrage mit den gesammelten Filtern
-  const filters = {};
-  if (category) filters.category = category;
-  if (startDate) filters.start_date = startDate;
-  if (endDate) filters.end_date = endDate;
-  if (keyword) filters.search = keyword;
-  if (language) filters.language = language;
-
-  console.log('Filter angewendet:', filters);
-  loadNews(filters);
-});
-
-// Event-Listener für den "Zurücksetzen"-Button
-document.getElementById('reset-filters').addEventListener('click', () => {
-  document.getElementById('filter-category').value = '';
-  document.getElementById('filter-start-date').value = '';
-  document.getElementById('filter-end-date').value = '';
-  document.getElementById('filter-keyword').value = '';
-  document.getElementById('filter-language').value = '';
-
-  console.log('Filter zurückgesetzt');
+  // Beim Anwenden der Filter werden die Feeds neu geladen
+  activeMarkers.clear(); // Ausgewählte Feeds zurücksetzen
+  loadFeeds();
   loadNews();
 });
 
-// 3. Kartensteuerung: Zoom-In und Zoom-Out
-document.getElementById('zoom-in').addEventListener('click', () => {
-  map.zoomIn();
+// Auswahl aufheben
+document.getElementById('clear-selection').addEventListener('click', () => {
+  activeMarkers.clear();
+  loadFeeds();
+  loadNews();
 });
 
-document.getElementById('zoom-out').addEventListener('click', () => {
-  map.zoomOut();
-});
+// Kategorien laden
+async function loadCategories() {
+  try {
+    const response = await fetch(CATEGORIES_URL);
+    if (!response.ok) {
+      throw new Error(`Fehler beim Abrufen der Kategorien: ${response.status}`);
+    }
+    const data = await response.json();
 
-// Kartenstil wechseln
-document.getElementById('toggle-style').addEventListener('click', () => {
-  if (map.hasLayer(tileLayer)) {
-    map.removeLayer(tileLayer);
-    const satelliteLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-      maxZoom: 17
+    const categorySelect = document.getElementById('filter-category');
+    categorySelect.innerHTML = '<option value="">Alle Kategorien</option>'; // Standardoption
+
+    // Kategorien hinzufügen
+    data.categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+      categorySelect.appendChild(option);
     });
-    satelliteLayer.addTo(map);
-  } else {
-    tileLayer.addTo(map);
+  } catch (error) {
+    console.error('Fehler beim Laden der Kategorien:', error);
   }
+}
+
+// Kartenbewegung
+map.on('moveend', () => {
+  loadFeeds();
 });
 
-// 4. Initiale API-Abfrage
+// Initiale Ladeprozesse
+loadCategories();
+loadFeeds();
 loadNews();
