@@ -23,7 +23,7 @@ def get_db_connection():
         raise
 
 ## Endpunkt: Nachrichten abrufen
-@app.route('/news', methods=['GET'])
+@app.route('/api/news', methods=['GET'])
 def get_news():
     try:
         # Logs zur Anfrage
@@ -51,12 +51,11 @@ def get_news():
             'longitude_max': request.args.get('longitude_max')
         }
         
-        # Konvertieren der feed_ids zu Integers
+        # feed_ids parsen
         if filters['feed_ids']:
-            try:
-                filters['feed_ids'] = [int(feed_id) for feed_id in filters['feed_ids']]
-            except ValueError:
-                return jsonify({'error': 'Ungültige feed_ids-Parameter'}), 400
+            feed_ids = [int(fid.strip()) for fid in filters['feed_ids'][0].split(',')]
+        else:
+            feed_ids = []
 
         # Basis-SQL-Abfrage
         query = sql.SQL("""
@@ -102,9 +101,9 @@ def get_news():
             params.extend([search_term, search_term])
             logger.info(f"Filter: search = {filters['search']}")
         if filters['feed_ids']:
-            placeholders = ', '.join(['%s'] * len(filters['feed_ids']))
-            where_clauses.append(sql.SQL(f"n.feed_id IN ({placeholders})"))
-            params.extend(filters['feed_ids'])
+            placeholders = sql.SQL(', ').join(sql.Placeholder() * len(feed_ids))
+            where_clauses.append(sql.SQL("n.feed_id IN ({})").format(placeholders))
+            params.extend(feed_ids)
 
 
         # Filter basierend auf Kartenkoordinaten
@@ -176,7 +175,7 @@ def get_news():
             conn.close()
 
 # Endpunkt: Feeds mit Nachrichtenanzahl abrufen
-@app.route('/feeds_with_counts', methods=['GET'])
+@app.route('/api/feeds_with_counts', methods=['GET'])
 def get_feeds_with_counts():
     try:
         # Filter-Parameter abrufen
@@ -262,7 +261,7 @@ def get_feeds_with_counts():
             conn.close()
 
 # Endpunkt: Kategorien abrufen
-@app.route('/categories', methods=['GET'])
+@app.route('/api/categories', methods=['GET'])
 def get_categories():
     try:
         conn = get_db_connection()
@@ -280,7 +279,7 @@ def get_categories():
             conn.close()
 
 # Endpunkt: Feeds abrufen
-@app.route('/feeds', methods=['GET'])
+@app.route('/api/feeds', methods=['GET'])
 def get_feeds():
     try:
         conn = get_db_connection()
