@@ -7,9 +7,9 @@ let activeMarkers = new Set();
 const markers = L.markerClusterGroup().addTo(map);
 
 // API-Basis-URLs
-const API_URL = 'http://127.0.0.1:5000/news';
-const FEEDS_URL = 'http://127.0.0.1:5000/feeds_with_counts';
-const CATEGORIES_URL = 'http://127.0.0.1:5000/categories';
+const API_URL = 'http://peterwolters.org/api/news';
+const FEEDS_URL = 'http://peterwolters.org/api/feeds_with_counts';
+const CATEGORIES_URL = 'http://peterwolters.org/api/categories';
 
 // Farben für Marker
 const defaultColor = '#3388ff'; // Blau
