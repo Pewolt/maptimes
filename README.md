@@ -31,3 +31,19 @@ Das Ziel von **maptimes** ist es, eine vielseitige und globalere Perspektive auf
 ## Projektstruktur
 
 ## Installation
+
+## TODO
+
+- **Suche verbessern**: Statt nach genauem Text zu suchen, verwerte die einzelnen Worte bei der Suche.
+
+- **Übersetzen**: Titel und Text sollen ins Englisch ggf. auch Deutsch übersetzt werden.
+
+- **Frontend**
+    - **Responsive** design, fürs Handy optimieren
+    - **News-Feed-Cards** sollen immer die selbe größe haben
+    - **favicon** hinzufügen
+    - **Titel** umbenennen
+    - **Suche** nach links, weitere Filter hinzufügen, verschönern und nicht wichtige Filter einklappen
+    - **Karteneinstellungen** hinzufügen, Zoomen nach rechts verschieben, Karten-Design-Auswahl anbieten
+    - **Standartzoom** auf gesammte Welt und mittig
+    - **Unendliche Karte** deaktivieren

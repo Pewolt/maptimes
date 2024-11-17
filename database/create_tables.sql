@@ -1,15 +1,25 @@
+-- Tabelle für Kategorien
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabelle für RSS-Feeds
 CREATE TABLE rss_feeds (
     id SERIAL PRIMARY KEY,
-    url TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
     name TEXT,
     language VARCHAR(10),
     country TEXT,
     city TEXT,
     latitude DECIMAL(9,6),
     longitude DECIMAL(9,6),
-    category TEXT,
+    category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
     description TEXT,
-    status VARCHAR(20) DEFAULT 'aktiv',
+    status VARCHAR(20) DEFAULT 'active',
     last_fetched TIMESTAMP,
     error_count INTEGER DEFAULT 0,
     fetch_interval INTEGER DEFAULT 60, -- in Minuten
@@ -24,26 +34,22 @@ CREATE TABLE news (
     description TEXT,
     link TEXT UNIQUE,
     publication_date TIMESTAMP,
-    feed_id INTEGER REFERENCES rss_feeds(id),
-    language VARCHAR(10),
-    unique_id VARCHAR(64) UNIQUE,
+    feed_id INTEGER REFERENCES rss_feeds(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabelle für Orte
-CREATE TABLE locations (
+-- Tabelle für Keywords
+CREATE TABLE keywords (
     id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE,
-    latitude DECIMAL(9,6),
-    longitude DECIMAL(9,6),
+    name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Verknüpfungstabelle zwischen Nachrichten und Orten
-CREATE TABLE news_locations (
-    news_id INTEGER REFERENCES news(id),
-    location_id INTEGER REFERENCES locations(id),
-    PRIMARY KEY (news_id, location_id)
+-- Verknüpfungstabelle für Nachrichten und Keywords
+CREATE TABLE news_keywords (
+    news_id INTEGER REFERENCES news(id) ON DELETE CASCADE,
+    keyword_id INTEGER REFERENCES keywords(id) ON DELETE CASCADE,
+    PRIMARY KEY (news_id, keyword_id)
 );

@@ -21,11 +21,14 @@ body {
   border-top: 1px solid #ddd;
 }
 
-
 /* Such- und Filterbereich */
 #filter-container {
   z-index: 1050; /* Über der Karte */
   max-width: 300px;
+}
+
+#selection-controls {
+  z-index: 1050; /* Über der Karte */
 }
 
 /* Nachrichtenkarten */

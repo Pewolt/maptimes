@@ -1,5 +1,6 @@
 # Verzeichnisse und Dateien ausschließen
 database/config.ini
+commands.txt
 
 # Python-spezifische Ausschlüsse
 __pycache__/
