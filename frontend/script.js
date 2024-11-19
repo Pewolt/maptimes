@@ -142,6 +142,11 @@ function updateNewsFeed(feeds) {
   const newsListContainer = document.getElementById('news-list');
   newsListContainer.innerHTML = '';
 
+  if (!feeds || feeds.length === 0) {
+    newsListContainer.innerHTML = '<p>Keine Nachrichten gefunden.</p>';
+    return;
+  }
+
   feeds.forEach(feed => {
     if (feed.news.length > 0) {
       const feedHeader = document.createElement('h5');
