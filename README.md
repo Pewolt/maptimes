@@ -39,6 +39,7 @@ Das Ziel von **maptimes** ist es, eine vielseitige und globalere Perspektive auf
 - **Übersetzen**: Titel und Text sollen ins Englisch ggf. auch Deutsch übersetzt werden.
 
 - **Frontend**
+    - **Reload** der API Abfrage jede Minute
     - **Responsive** design, fürs Handy optimieren
     - **News-Feed-Cards** sollen immer die selbe größe haben
     - **favicon** hinzufügen
@@ -47,3 +48,7 @@ Das Ziel von **maptimes** ist es, eine vielseitige und globalere Perspektive auf
     - **Karteneinstellungen** hinzufügen, Zoomen nach rechts verschieben, Karten-Design-Auswahl anbieten
     - **Standartzoom** auf gesammte Welt und mittig
     - **Unendliche Karte** deaktivieren
+    - **Linie** zwischen News-Karte und Kartenmarkierung ziehen
+    - **Ausgeklappte Karte** soll mehr Infos anzeigen, wie Herausgeber und Datum
+
+- **API**: Falls möglich, könnten Sie die Backend-API so erweitern, dass die Feeds bereits mit den gefilterten Nachrichtenanzahlen zurückgegeben werden. Dies würde die Notwendigkeit, die Nachrichtenanzahlen im Frontend zu zählen, eliminieren und die Effizienz verbessern.
