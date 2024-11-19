@@ -31,70 +31,62 @@ async function loadFeedsAndNews(filters = {}) {
   try {
     const response = await fetch(`${API_URL}?${params.toString()}`);
     if (!response.ok) {
-      throw new Error(`Fehler beim Abrufen der Feeds und Nachrichten: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("API-Antwort:", data); // Debugging
+
+    // Karte und Newsfeed aktualisieren
     updateMap(data.feeds);
     updateNewsFeed(data.feeds);
   } catch (error) {
-    console.error('Fehler beim Laden der Feeds und Nachrichten:', error);
+    console.error("Fehler beim Laden der Feeds und Nachrichten:", error);
   }
 }
+
 
 // Karte mit Feeds und Nachrichten aktualisieren
 function updateMap(feeds) {
   markers.clearLayers();
 
   feeds.forEach(feed => {
-    if (feed.news_count > 0) {
-      const markerSize = getMarkerSize(feed.news_count);
-      const color = activeMarkers.has(feed.feed_id) ? selectedColor : defaultColor;
+    const markerSize = getMarkerSize(feed.news.length);
+    const color = activeMarkers.has(feed.feed_id) ? selectedColor : defaultColor;
 
-      const customIcon = L.divIcon({
-        html: `<div style="
-          background-color: ${color};
-          width: ${markerSize * 2}px;
-          height: ${markerSize * 2}px;
-          border-radius: 50%;
-          border: 2px solid #fff;
-          box-sizing: border-box;
-        "></div>`,
-        className: '',
-        iconSize: [markerSize * 2, markerSize * 2],
-        iconAnchor: [markerSize, markerSize],
-      });
+    const customIcon = L.divIcon({
+      html: `<div style="
+        background-color: ${color};
+        width: ${markerSize * 2}px;
+        height: ${markerSize * 2}px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-sizing: border-box;
+      "></div>`,
+      className: '',
+      iconSize: [markerSize * 2, markerSize * 2],
+      iconAnchor: [markerSize, markerSize],
+    });
 
-      const marker = L.marker([feed.latitude, feed.longitude], { icon: customIcon });
+    const marker = L.marker([feed.latitude, feed.longitude], { icon: customIcon });
 
-      // Feed-ID und Nachrichtenanzahl speichern
-      marker.feedId = feed.feed_id;
-      marker.news_count = feed.news_count;
+    // Feed-ID speichern
+    marker.feedId = feed.feed_id;
 
-      marker.on('click', () => {
-        toggleFeedSelection(marker);
-      });
+    // Tooltip hinzufügen
+    marker.bindTooltip(`${feed.name} (${feed.news.length} Nachrichten)`);
 
-      // Tooltip hinzufügen
-      marker.bindTooltip(`${feed.name} (${feed.news_count} Nachrichten)`);
+    marker.on('click', () => {
+      toggleFeedSelection(marker);
+    });
 
-      markers.addLayer(marker);
-    }
+    markers.addLayer(marker);
   });
 
   // Sicherstellen, dass die Marker-Schicht zur Karte hinzugefügt wird
   if (!map.hasLayer(markers)) {
     map.addLayer(markers);
   }
-}
-
-// Marker-Größe basierend auf Nachrichtenanzahl
-function getMarkerSize(newsCount) {
-  const minSize = 5;
-  const maxSize = 15;
-  const maxNewsCount = 50; // Anpassen je nach Ihren Daten
-  const size = minSize + (Math.min(newsCount, maxNewsCount) / maxNewsCount) * (maxSize - minSize);
-  return size;
 }
 
 // Feeds auswählen oder abwählen
@@ -142,23 +134,20 @@ function updateNewsFeed(feeds) {
   const newsListContainer = document.getElementById('news-list');
   newsListContainer.innerHTML = '';
 
-  if (!feeds || feeds.length === 0) {
-    newsListContainer.innerHTML = '<p>Keine Nachrichten gefunden.</p>';
-    return;
-  }
-
   feeds.forEach(feed => {
     if (feed.news.length > 0) {
+      // Feed-Header hinzufügen
       const feedHeader = document.createElement('h5');
-      feedHeader.textContent = `${feed.name} (${feed.news_count} Nachrichten)`;
+      feedHeader.textContent = `${feed.name} (${feed.news.length} Nachrichten)`;
       newsListContainer.appendChild(feedHeader);
 
+      // Nachrichtenkarten hinzufügen
       feed.news.forEach(newsItem => {
         const newsCard = document.createElement('div');
         newsCard.className = 'news-card bg-white border p-2 m-1 rounded shadow-sm';
         newsCard.innerHTML = `
           <strong>${newsItem.title}</strong><br>
-          ${newsItem.description.substring(0, 50)}...<br>
+          ${newsItem.description.substring(0, 100)}...<br>
           <button class="btn btn-link p-0" onclick='showNewsPopup(${JSON.stringify(newsItem)})'>Mehr</button>
         `;
         newsListContainer.appendChild(newsCard);
@@ -181,8 +170,8 @@ function showNewsPopup(newsItem) {
     : 'Nicht verfügbar';
   document.getElementById('popup-publication-date').textContent = publicationDate;
 
-  // Herausgeber (Feed-Name)
-  const publisher = newsItem.feed?.name || 'Unbekannt';
+  // Herausgeber
+  const publisher = newsItem.link || 'Unbekannt';
   document.getElementById('popup-publisher').textContent = publisher;
 
   // Link
@@ -191,6 +180,11 @@ function showNewsPopup(newsItem) {
   // Popup anzeigen
   popup.classList.remove('d-none');
 }
+
+// Popup schließen
+document.getElementById('close-popup').addEventListener('click', () => {
+  document.getElementById('news-popup').classList.add('d-none');
+});
 
 // Setze Standardzeitraum auf eine Woche
 function setDefaultDateRange() {
