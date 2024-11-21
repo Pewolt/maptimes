@@ -176,6 +176,11 @@ function updateNewsFeed(feeds) {
             </div>
           </div>
         `;
+        // Klick-Event hinzufügen
+        newsCard.addEventListener('click', () => {
+          showNewsPopup(newsItem, feed.name);
+        });
+
         newsListContainer.appendChild(newsCard);
       });
     }
@@ -223,18 +228,32 @@ function updateMarkerIcon(marker, color) {
 // --------------------------------------
 // Nachrichten-Popup
 // --------------------------------------
-function showNewsPopup(newsItem) {
+// Nachrichten-Popup anzeigen
+function showNewsPopup(newsItem, feedName) {
   const popup = document.getElementById('news-popup');
+
+  // Titel und Beschreibung
   document.getElementById('popup-title').textContent = newsItem.title;
   document.getElementById('popup-description').textContent = newsItem.description;
-  document.getElementById('popup-publication-date').textContent = newsItem.publication_date
+
+  // Veröffentlichungsdatum
+  const publicationDate = newsItem.publication_date
     ? new Date(newsItem.publication_date).toLocaleString()
     : 'Nicht verfügbar';
-  document.getElementById('popup-publisher').textContent = newsItem.link || 'Unbekannt';
+  document.getElementById('popup-publication-date').textContent = publicationDate;
+
+  // Herausgeber
+  const publisher = feedName || 'Unbekannt';
+  document.getElementById('popup-publisher').textContent = publisher;
+
+  // Link
   document.getElementById('popup-link').href = newsItem.link;
+
+  // Popup anzeigen
   popup.classList.remove('d-none');
 }
 
+// Popup schließen
 document.getElementById('close-popup').addEventListener('click', () => {
   document.getElementById('news-popup').classList.add('d-none');
 });
