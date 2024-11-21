@@ -1,44 +1,80 @@
-body {
-  margin: 0;
-  padding: 0;
+/* Hauptcontainer */
+#main-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh; /* Füllt den gesamten Viewport */
 }
 
+/* Kartencontainer */
+#map-container {
+  flex-grow: 1; /* Nimmt den verfügbaren Platz ein */
+  position: relative;
+}
+
+/* Karte */
 #map {
-  flex: 1 0 auto;
   width: 100%;
+  height: 100%; /* Füllt den Parent-Container aus */
 }
 
+/* Suchfeld */
+#search-container {
+  z-index: 1050;
+}
+
+#extended-filters {
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+#extended-filters.d-none {
+  max-height: 0;
+  opacity: 0;
+}
+
+#extended-filters:not(.d-none) {
+  max-height: 500px; /* Genügend Platz für Inhalte */
+  opacity: 1;
+}
+
+/* Nachrichtenleiste */
 #news-feed {
-  flex: 0 0 20%;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 20%;
   overflow-x: auto;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#news-list {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #ddd;
+  gap: 1rem;
 }
 
-/* Such- und Filterbereich */
-#filter-container {
-  z-index: 1050; /* Über der Karte */
-  max-width: 300px;
-}
-
-#selection-controls {
-  z-index: 1050; /* Über der Karte */
-}
-
-/* Nachrichtenkarten */
 .news-card {
-  min-width: 200px;
-  cursor: pointer;
+  flex-shrink: 0;
+  width: 250px; /* Breitere Karten für bessere Lesbarkeit */
 }
 
-.news-card:hover {
-  background-color: #e9ecef;
+/* Karten-Body mit Flexbox */
+.card-body {
+  height: 300px; /* Feste Höhe für alle Karten */
+  display: flex;
+  flex-direction: column; /* Inhalte werden vertikal gestapelt */
+  overflow: hidden;
+}
+
+/* Abstand für das Veröffentlichungsdatum */
+.card-body .mt-auto {
+  margin-top: auto; /* Schiebt das Datum nach unten */
+}
+
+.card-text {
+  overflow: hidden; /* Überschreitende Inhalte ausblenden */
+  text-overflow: ellipsis; /* ... hinzufügen, wenn der Text abgeschnitten wird */
 }
 
 /* Nachrichten-Popup */
