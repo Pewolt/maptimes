@@ -116,8 +116,8 @@ def get_news_and_feeds_grouped():
             query += sql.SQL(" AND ") + sql.SQL(" AND ").join(where_clauses)
 
         query += sql.SQL("""
-            GROUP BY rf.id, rf.name, c.name, rf.country, rf.city, rf.latitude, rf.longitude
-            ORDER BY rf.name
+            GROUP BY rf.id, rf.name, c.name, rf.country, rf.city, rf.latitude, rf.longitude, n.publication_date
+            ORDER BY n.publication_date DESC
         """)
 
         logger.info(f"Feeds mit Nachrichten SQL: {query.as_string(conn)}")
